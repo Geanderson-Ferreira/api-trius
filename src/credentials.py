@@ -1,0 +1,13 @@
+
+
+class Credentials:
+
+    def __init__(self, user=None, hotel=None):
+        self.api_url = "https://acc2-oc.hospitality-api.us-ashburn-1.ocs.oraclecloud.com"
+        self.app_key = '5502014f-a4f1-4135-9d45-ae5fd594eba5'
+        self.client_id = 'ACCORAT_Client'
+        self.hotel_id = 'H5519'
+        self.token = self._get_token()
+
+    def _get_token(self):
+        return "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsIng1dCI6IjFCZUYycEpFQWQtY3g2d3BnU3IyTkFZbkVtdyIsImtpZCI6Im1zLW9hdXRoa2V5In0.eyJzdWIiOiJpbnRlZ3JhY2FvX2dlYW5kZXJzb24iLCJpc3MiOiJ3d3cub3JhY2xlLmNvbSIsIm9yYWNsZS5vYXV0aC5zdmNfcF9uIjoiT0F1dGhTZXJ2aWNlUHJvZmlsZSIsImlhdCI6MTcyODY2ODYzNSwib3JhY2xlLm9hdXRoLnBybi5pZF90eXBlIjoiTERBUF9VSUQiLCJleHAiOjE3Mjg2NzIyMzUsIm9yYWNsZS5vYXV0aC50a19jb250ZXh0IjoidXNlcl9hc3NlcnRpb24iLCJhdWQiOlsiaHR0cHM6Ly8qb3JhY2xlKi5jb20iLCJodHRwczovLyouaW50ICIsImh0dHBzOi8vKm9jcy5vYy10ZXN0LmNvbS8iXSwicHJuIjoiaW50ZWdyYWNhb19nZWFuZGVyc29uIiwianRpIjoiMDQwOGU4YWEtMTJmZC00MTkyLTk2MzgtNzUwYmFlZTI5N2U1Iiwib3JhY2xlLm9hdXRoLmNsaWVudF9vcmlnaW5faWQiOiJBQ0NPUkFUX0NsaWVudCIsInVzZXIudGVuYW50Lm5hbWUiOiJEZWZhdWx0RG9tYWluIiwib3JhY2xlLm9hdXRoLmlkX2RfaWQiOiIxMjM0NTY3OC0xMjM0LTEyMzQtMTIzNC0xMjM0NTY3ODkwMTIifQ.gxZuybY3FnI1yV0oP319Lx9zmeCOA9dONjNsocbjY6fcQdtwEICgHlR23ojQyGmMhLW_Lf5u7lftP2DLjqUfBCYzUx8mJDH5lpOfddFHq5xzTa4iz13YlHRxKvqdZ4AYZIovgaFW2RNBD1hCEgbqZnPBUH48Sq5AN157rm1OgI96mS9BsMkGulODT7RcMSujM9LWBNTvimPhLWWCC61l3NPqNwbqvEomrPK0YaCEMtXnd_3VtcD5nBzuBY0Tb8tj_Z9mEi2ijdrxchE2qxI7EaQCGBim-yy8kV5Evi5zfZt7-BFXFBpQhFDsJaoRR9hDRoY-nEHoZqQd_dGPV8a-mw"
