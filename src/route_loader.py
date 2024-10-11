@@ -18,4 +18,4 @@ def load_routes(app, prefix='api'):
                     
                     # Assume que cada módulo tem um objeto `router`
                     if hasattr(module, 'router'):
-                        app.include_router(module.router, prefix=f"/{prefix}i/{version}")
+                        app.include_router(module.router, prefix=f"/{prefix}/{version}")

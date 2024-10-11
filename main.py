@@ -1,11 +1,7 @@
 from fastapi import FastAPI
-import os
-import importlib
 from src.route_loader import load_routes
 
 app = FastAPI()
-
-
 
 # Carrega as rotas
 load_routes(app, prefix='api')
