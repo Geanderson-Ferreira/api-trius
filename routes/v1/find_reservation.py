@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime
 from pydantic import BaseModel
 from routes.v1.auth import oauth2_scheme
+from src.ohip_reservations import Reservas
+from src.credentials import Credentials
 
 ROTA = "/find-reservation"
 
@@ -19,9 +21,8 @@ router = APIRouter()
 class DateResponse(BaseModel):
     date: str
 
-
-@router.get(ROTA, response_model=DateResponse)
-async def find_reservation(checkoutDate: str, reservationNumber: str, lastName: str, token: str = Depends(oauth2_scheme)):
+@router.get(ROTA)
+async def find_reservation(hotel: str, checkoutDate: str, reservationNumber: str=None, firstname: str=None, lastName: str=None, token: str = Depends(oauth2_scheme)):
 
     #Mais um check de Token
     if token is None:
@@ -29,8 +30,25 @@ async def find_reservation(checkoutDate: str, reservationNumber: str, lastName: 
 
     #Verifica o formato da data de checkout
     try:
-        parsed_date = datetime.strptime(checkoutDate, "%Y-%m-%d")
+        datetime.strptime(checkoutDate, "%Y-%m-%d")
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
     
-    return {"date": parsed_date.strftime("%Y-%m-%d")}
+    #Instacia de reservas com as credenciais do hotel carregadas
+    ConsultaReservas = Reservas(
+        Credentials(hotel)
+        )
+
+    ConsultaReservas.get_reservations_by_checkout_date(checkoutDate)
+
+    resultado = ConsultaReservas.find_reservation_inside_of_results(
+        lastName=lastName,
+        reservationNumber=reservationNumber,
+        firstName=firstname
+    )
+
+    if resultado['responseStatus'] != 200:
+        raise HTTPException(status_code=401, detail=resultado['Error'])
+
+
+    return resultado['dataResult']
