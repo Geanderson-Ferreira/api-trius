@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import datetime
 from pydantic import BaseModel
-from routes.v1.auth import oauth2_scheme
 from src.ohip_reservations import Reservas
 from src.credentials import Credentials
 from typing import List
 import requests
+import jwt
+from routes.v1.auth import oauth2_scheme, SECRET_KEY
 
 ROTA = "/get-profiles"
 
@@ -29,7 +30,7 @@ Estado
 router = APIRouter()
 
 @router.get(ROTA)
-async def get_profiles(hotelId:str, profileId: List[int] = Query(..., max_length=6)):
+async def get_profiles(hotelId:str, profileId: List[int] = Query(..., max_length=6), token: str = Depends(oauth2_scheme)):
     """Obtém perfis de hóspedes com base nos parâmetros de URL fornecidos.
 
     - **profileIds**:
@@ -37,7 +38,16 @@ async def get_profiles(hotelId:str, profileId: List[int] = Query(..., max_length
     O limite é 6 profiles.
 
     """
+    try:
+        # Decodifica o token para verificar a autenticidade
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        username = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
 
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+        
     credenciais = Credentials(hotelId)
 
     resultado = []

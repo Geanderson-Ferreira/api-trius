@@ -6,6 +6,6 @@ from routes.v1.auth import oauth2_scheme
 router = APIRouter()
 
 
-@router.get("/init")
+@router.get("/api-version")
 async def init():    
     return {"info": "versao em desenvolvimento."}
