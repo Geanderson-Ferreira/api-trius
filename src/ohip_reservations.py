@@ -85,20 +85,9 @@ class Reservas:
             last = bool(str(lastName).lower() in list(map(lambda x: str(x).lower(), surname.split(' '))) or lastName is None)
             first = bool(str(firstName).lower() in list(map(lambda x: str(x).lower(), first_name.split(' '))) or firstName is None)
 
-            if opera:
-                print(f"""
-                    conf: {opera_confirmation}
-                    opera: {opera}
-                    ext: {ext}
-                    last: {last}
-                    first: {first}
-    ___________________________
-                """)
-
             # Faz o filtro das condicoes
             filter_conditions = bool(
                 bool(
-                
                     bool(reservationNumber in external_references or reservationNumber is None or str(reservationNumber) == str(opera_confirmation))
                     and
                     bool( str(reservationNumber) == str(opera_confirmation) or reservationNumber is None)
@@ -106,16 +95,15 @@ class Reservas:
                     bool(str(lastName).lower() in list(map(lambda x: str(x).lower(), surname.split(' '))) or lastName is None)
                     and
                     bool(str(firstName).lower() in list(map(lambda x: str(x).lower(), first_name.split(' '))) or firstName is None) 
-            
+
                 )
                 and
                     resv_id not in reservas_verificadas
-                
+
                 and not
-                
+
                     bool(lastName is None and reservationNumber is None and firstName is None)
             )
-
 
             #Para cada vez que o filtro pegar, inclui na lista de resultados
             if filter_conditions:
@@ -123,17 +111,16 @@ class Reservas:
                 share_ids = [x['profileId']['id'] for x in reserva.get('sharedGuests', [])]
                 list_of_shared_reservations = [x for x in reservas if x['reservationIdList'][0]['id'] in share_ids]
                 list_of_shared_reservations.append(reserva)
-                
+
                 total_adults = sum([
                     int(x.get('roomStay', {}).get('adultCount', 0)) 
                         for x in list_of_shared_reservations
                     ])
-                
+
                 total_childs = sum([
                     int(reserva.get('roomStay', {}).get('childCount', 0)) 
                         for reserva in list_of_shared_reservations
                     ])
-                
 
                 guests = [
                     {
@@ -144,7 +131,7 @@ class Reservas:
                 ]
 
                 reservas_verificadas.extend(share_ids)
-                
+
                 resultado_final.append(
                     {
 

@@ -24,31 +24,35 @@ class DateResponse(BaseModel):
 @router.get(ROTA)
 async def find_reservation(hotel: str, checkoutDate: str, reservationNumber: str=None, firstname: str=None, lastName: str=None, token: str = Depends(oauth2_scheme)):
 
-    #Mais um check de Token
-    if token is None:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    #Verifica o formato da data de checkout
     try:
-        datetime.strptime(checkoutDate, "%Y-%m-%d")
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
-    
-    #Instacia de reservas com as credenciais do hotel carregadas
-    ConsultaReservas = Reservas(
-        Credentials(hotel)
+        #Mais um check de Token 
+        if token is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        #Verifica o formato da data de checkout
+        try:
+            datetime.strptime(checkoutDate, "%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+        
+        #Instacia de reservas com as credenciais do hotel carregadas
+        ConsultaReservas = Reservas(
+            Credentials(hotel)
+            )
+
+        ConsultaReservas.get_reservations_by_checkout_date(checkoutDate)
+
+        resultado = ConsultaReservas.find_reservation_inside_of_results(
+            lastName=lastName,
+            reservationNumber=reservationNumber,
+            firstName=firstname
         )
 
-    ConsultaReservas.get_reservations_by_checkout_date(checkoutDate)
+        if resultado['responseStatus'] != 200:
+            raise HTTPException(status_code=401, detail=resultado['Error'])
 
-    resultado = ConsultaReservas.find_reservation_inside_of_results(
-        lastName=lastName,
-        reservationNumber=reservationNumber,
-        firstName=firstname
-    )
-
-    if resultado['responseStatus'] != 200:
-        raise HTTPException(status_code=401, detail=resultado['Error'])
-
+    except Exception as erro:
+        raise HTTPException(status_code=401, detail=erro)
+        return
 
     return resultado['dataResult']
