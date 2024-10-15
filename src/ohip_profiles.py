@@ -1,7 +1,96 @@
 import requests
 import json
 from src.credentials import Credentials
+from fastapi import HTTPException
 
+def get_profiles(credenciais: Credentials, profile_id_list):
+
+    credenciais = Credentials(credenciais.hotel_id)
+    any_success = False
+
+    resultado = []
+    for profile in profile_id_list:
+    
+        url = f"{credenciais.api_url}/crm/v1/profiles/{profile}"
+
+        # Defina os parâmetros diretamente
+        params = {
+            'fetchInstructions': [
+                'Address', 'Comment', 'Communication', 'Correspondence',
+                'DeliveryMethods', 'FutureReservation', 'GdsNegotiatedRate',
+                'HistoryReservation', 'Indicators', 'Keyword', 'Membership',
+                'NegotiatedRate', 'Preference', 'Profile', 'Relationship',
+                'SalesInfo', 'Subscriptions', 'WebUserAccount'
+            ]
+        }
+
+        payload = {}
+        headers = {
+            'x-app-key': credenciais.app_key,
+            'x-hotelid': credenciais.hotel_id,
+            'Authorization': f'Bearer {credenciais.token}'
+        }
+
+        # Faça a requisição com os parâmetros
+        
+        response = requests.get(url, headers=headers, params=params)
+
+        if response.ok:
+
+            profile_json = response.json()
+            
+            full_name = profile_json.get('profileDetails',{}).get('customer',{}).get('personName',[{}])[0].get('givenName')
+            nacionalidade = profile_json.get('profileDetails',{}).get('customer',{}).get('citizenCountry',{}).get('code')
+            date_of_birth = profile_json.get('profileDetails',{}).get('customer',{}).get('birthDate')
+            email = profile_json.get('profileDetails',{}).get('emails',{}).get('emailInfo',[{}])[0].get('email',{}).get('emailAddress')
+            telephone = profile_json.get('profileDetails',{}).get('telephones',{}).get('telephoneInfo',[{}])[0].get('telephone',{}).get('phoneNumber')
+            country = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('country',{}).get('code')
+            zip_code = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('postalCode')
+            
+
+            address_line = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('addressLine')
+
+            street = address_line[0] if len(address_line) > 0 else None
+            numero_residencial =  address_line[1] if len(address_line) > 1 else None
+            if str(numero_residencial).isdigit():
+                numero_residencial = int(numero_residencial)
+            else: numero_residencial = None
+
+            bairro = address_line[2] if len(address_line) > 2 else None
+            complemento = address_line[3] if len(address_line) > 3 else None
+            cidade = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('cityName')
+            estado = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('state')
+            cpf = profile_json.get('profileDetails',{}).get('taxInfo',{}).get('tax1No')
+            gender = profile_json.get('profileDetails',{}).get('customer',{}).get('gender')
+
+
+            dados = {
+                'fullName': full_name,
+                'citizenCountry': nacionalidade,
+                'dateOfBirth': date_of_birth,
+                'email': email,
+                'telephone': telephone,
+                'residenceCountry': country,
+                'zipCode': zip_code,
+                'street': street,
+                'residenceNumber': numero_residencial,
+                'neighborhood': bairro,
+                'complement': complemento,
+                'city': cidade,
+                'state': estado,
+                'cpf': cpf,
+                'gender': gender
+            }
+
+            resultado.append({profile: dados})
+            any_success = True
+        else:
+            resultado.append({profile: response.text})
+
+    if any_success:
+        return {"status": 200, "content": resultado}
+    else:
+        return {"status": response.status_code, "content": response.text}
 
 def put_cpf(credencials: Credentials, profile_id, cpf):
 
@@ -48,10 +137,20 @@ def create_profile(credenciais: Credentials,
                     complement: str,
                     city: str,
                     state: str,
-                    cpf: str,
+                    cpfOrPassport: str,
                     gender: str,
                    ):
     birth_date_str = date_of_birth.strftime('%Y-%m-%d')
+
+    is_estrangeiro = bool(citizen_country != 'BR')
+
+    if is_estrangeiro:
+        doc = 'PASSPORT'
+        cpf_fake = credenciais.get_fake_cpf()
+    else:
+        doc = 'CPF'
+        
+
     
     name = full_name.split(' ')
 
@@ -69,6 +168,17 @@ def create_profile(credenciais: Credentials,
     profile_json = {
     "profileDetails": {
         "customer": {
+            "identifications": {
+                    "identificationInfo": [
+                    {
+                        "identification": {
+                        "idType": doc,
+                        "idNumber": cpfOrPassport,
+                        "primaryInd": True
+                        }
+                    }
+                    ]
+                },
         "personName": [
             {
             "givenName": first_name,
@@ -82,10 +192,13 @@ def create_profile(credenciais: Credentials,
             "nameType": "Incognito"
             }
         ],
+
+        
         "alienInfo": {},
         "birthCountry": {
             "code": citizen_country
         },
+        
         "gender": gender,
         "birthDate": birth_date_str,
         "language": "E"
@@ -165,12 +278,7 @@ def create_profile(credenciais: Credentials,
     },
     "profileIdList": []
     }
-    print('\n')
-    print(profile_json)
-    print('\n'
-          )
-    
-    
+
     payload = json.dumps(profile_json)
     headers = {
     'Content-Type': 'application/json',
@@ -183,14 +291,21 @@ def create_profile(credenciais: Credentials,
 
     if response.ok:
 
-        print("Cadastro criado.")
-
         data = response.json()
 
         prof_id_returned = data['links'][0]['href'].split('/')[-1]
-        post_cpf = put_cpf(credenciais, prof_id_returned, cpf)
 
-        return prof_id_returned
-    else:
-        print(response.text)
+        if is_estrangeiro:
+            post_cpf = put_cpf(credenciais, prof_id_returned, cpf_fake)
+        else:
+            post_cpf = put_cpf(credenciais, prof_id_returned, cpfOrPassport)
         
+        dados = get_profiles(credenciais, [prof_id_returned])
+
+        if dados['status'] != 200:
+            dados = {'status': 200, 'content': f'Cadastro criado com sucesso, mas erro no get: {dados['content']}'}
+
+    else:
+        dados = {'status': 400, 'content': response.text}
+
+    return dados
