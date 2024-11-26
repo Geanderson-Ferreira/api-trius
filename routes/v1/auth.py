@@ -39,7 +39,7 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta = None):
 @router.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = User(username=form_data.username, password=form_data.password)  # Aqui você deve verificar o usuário no banco de dados
-    if user.username != "admin" or user.password != "password":  # Exemplo de verificação
+    if user.username != "admin" or user.password != "adminMaior":  # Exemplo de verificação
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",

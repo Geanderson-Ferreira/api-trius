@@ -7,8 +7,8 @@ def get_profiles(credenciais: Credentials, profile_id_list):
 
     credenciais = Credentials(credenciais.hotel_id)
     any_success = False
-
     resultado = []
+
     for profile in profile_id_list:
     
         url = f"{credenciais.api_url}/crm/v1/profiles/{profile}"
@@ -24,7 +24,6 @@ def get_profiles(credenciais: Credentials, profile_id_list):
             ]
         }
 
-        payload = {}
         headers = {
             'x-app-key': credenciais.app_key,
             'x-hotelid': credenciais.hotel_id,
@@ -49,15 +48,24 @@ def get_profiles(credenciais: Credentials, profile_id_list):
             
 
             address_line = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('addressLine')
-
-            street = address_line[0] if len(address_line) > 0 else None
-            numero_residencial =  address_line[1] if len(address_line) > 1 else None
+            
+            #Há casos em que o cadastro não possui address_line, portanto nesses casos, Rua, Numero, Bairro e Complemento devem ser nulos.
+            if address_line != None:
+                street = address_line[0] if len(address_line) > 0 else None
+                numero_residencial =  address_line[1] if len(address_line) > 1 else None
+                bairro = address_line[2] if len(address_line) > 2 else None
+                complemento = address_line[3] if len(address_line) > 3 else None
+            else:
+                street = None
+                numero_residencial =  None
+                bairro = None
+                complemento = None
+            
             if str(numero_residencial).isdigit():
                 numero_residencial = int(numero_residencial)
             else: numero_residencial = None
 
-            bairro = address_line[2] if len(address_line) > 2 else None
-            complemento = address_line[3] if len(address_line) > 3 else None
+
             cidade = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('cityName')
             estado = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('state')
             cpf = profile_json.get('profileDetails',{}).get('taxInfo',{}).get('tax1No')
@@ -91,6 +99,10 @@ def get_profiles(credenciais: Credentials, profile_id_list):
         return {"status": 200, "content": resultado}
     else:
         return {"status": response.status_code, "content": response.text}
+
+
+
+
 
 def put_cpf(credencials: Credentials, profile_id, cpf):
 
