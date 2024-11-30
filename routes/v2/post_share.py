@@ -8,7 +8,6 @@ from datetime import date
 ROTA = "/make-share/{reservationId}"
 
 
-
 # Inicializa o roteador de clientes
 router = APIRouter()
 

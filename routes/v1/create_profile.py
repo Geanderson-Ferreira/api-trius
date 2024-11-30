@@ -48,3 +48,4 @@ async def create_customer_profile(hotel, profile: GuestProfile, token: str = Dep
         return profile_criado['content']
     else:
         raise HTTPException(status_code=401, detail=profile_criado['content'])
+    
