@@ -5,7 +5,7 @@ import jwt
 import datetime
 
 # Definições de configuração
-SECRET_KEY = "your_secret_key" 
+SECRET_KEY = "your_very_long_and_complex_secret_key_with_high_entropy_1234567890!@#$%^&*()" 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -28,18 +28,27 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 # Função para criar um token
 def create_access_token(data: dict, expires_delta: datetime.timedelta = None):
     to_encode = data.copy()
+
     if expires_delta:
         expire = datetime.datetime.utcnow() + expires_delta
+    
     else:
         expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 # Rota para autenticação e geração de token
 @router.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    
     user = User(username=form_data.username, password=form_data.password)  
+
+    
+    print(form_data.client_secret)
+
     if user.username != "admin" or user.password != "adminMaior":  
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",

@@ -2,7 +2,7 @@ import requests
 from src.credentials import Credentials
 from datetime import datetime
 import json 
-
+from fastapi import HTTPException, status
 
 
 
@@ -54,12 +54,11 @@ def get_reservations_by_checkout_date(credentials, checkoutDate: str):
                     "dataResult": response_data
                     }
         else:
-            print(f"Erro ao obter reservas: {response.text}")
-            hasMore = False
-            search_results = {
-                "responseStatus": response.status_code,
-                "dataResult": response.text
-            }
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=response.text,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     return search_results
 
 

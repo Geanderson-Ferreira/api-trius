@@ -22,39 +22,28 @@ async def find_reservation(
     token: str = Depends(oauth2_scheme)
 ):
 
-    # Token validation (early check for authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    # Validate checkout date format
     try:
         datetime.strptime(checkoutDate, "%Y-%m-%d")
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
 
-    try:
-        # Fetch all reservations for the given checkout date
-        reservas_do_dia = get_reservations_by_checkout_date(Credentials(hotel), checkoutDate)
+    reservas_do_dia = get_reservations_by_checkout_date(Credentials(hotel), checkoutDate)
 
-        if reservas_do_dia.get('responseStatus') != 200:
-            raise HTTPException(status_code=404, detail="Reservations for the specified checkout date not found.")
+    if reservas_do_dia.get('responseStatus') != 200:
+        raise HTTPException(status_code=404, detail="Reservations for the specified checkout date not found.")
 
-        # Find the reservation based on the filters provided
-        resultado = find_reservation_inside_of_results(
-            search_results=reservas_do_dia,
-            lastName=lastName,
-            reservationNumber=reservationNumber,
-            firstName=firstname
-        )
+    resultado = find_reservation_inside_of_results(
+        search_results=reservas_do_dia,
+        lastName=lastName,
+        reservationNumber=reservationNumber,
+        firstName=firstname
+    )
 
-        if resultado.get('responseStatus') != 200:
-            raise HTTPException(status_code=404, detail=resultado.get('Error', 'No results found.'))
+    if resultado.get('responseStatus') != 200:
+        raise HTTPException(status_code=404, detail=resultado.get('Error', 'No results found.'))
 
-    except ValueError as ve:
-        # Handle specific exceptions with appropriate status code and message
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        # Catch any other unexpected errors
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
     return resultado.get('dataResult', [])

@@ -20,7 +20,4 @@ class Credentials:
 # Checkin = 13/03/2023
 # Checkout = 14/03/2023
 
-
-
-# Reservation Master = 1067493
-# shareProfileId = 792915
+# Quero sharear a reserva 1067493 com as reservas 1067507 e 1067494
