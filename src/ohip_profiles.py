@@ -100,10 +100,6 @@ def get_profiles(credenciais: Credentials, profile_id_list):
     else:
         return {"status": response.status_code, "content": response.text}
 
-
-
-
-
 def put_cpf(credencials: Credentials, profile_id, cpf):
 
 

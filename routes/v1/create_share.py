@@ -5,23 +5,18 @@ from src.ohip_profiles import create_profile
 from src.credentials import Credentials
 from models.models import GuestProfile
 from src.ohip_reservations import create_share
-from pydantic import BaseModel
+from models.models import ShareRequestBody
 
 ROTA = "/create-share/"
 
 # Inicializa o roteador de clientes
 router = APIRouter()
 
-# Definindo o modelo que será utilizado no corpo da requisição
-class ShareRequestBody(BaseModel):
-    reservationIdParent: int
-    shareProfileId: int
-
 # Novo endpoint para receber o perfil do cliente
 @router.post(ROTA)
 async def create_customer_profile(
-    body: ShareRequestBody,  # Agora os dados vêm no corpo
-    hotel: str,               # Parâmetro adicional
+    body: ShareRequestBody,
+    hotel: str,
     token: str = Depends(oauth2_scheme)
 ):
     """
@@ -40,9 +35,6 @@ async def create_customer_profile(
     # Extrair os dados do corpo da requisição
     reservationIdParent = body.reservationIdParent
     shareProfileId = body.shareProfileId
-
-    print(reservationIdParent)
-    print(shareProfileId)
 
     # Criar credenciais
     credenciais = Credentials(hotel)
