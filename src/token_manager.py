@@ -7,7 +7,6 @@ from src.utils import api_return
 
 load_dotenv()
 
-
 def get_credentials(hotel):
     DATA_BASE_NAME = environ.get('DATA_BASE_NAME')
     DATA_BASE_USER = environ.get('DATA_BASE_USER')

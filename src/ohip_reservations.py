@@ -3,6 +3,7 @@ from src.credentials import Credentials
 from datetime import datetime
 import json 
 from fastapi import HTTPException, status
+from src.utils import api_return
 
 def get_reservations_by_checkout_date(credentials, checkoutDate: str):
 
@@ -472,4 +473,145 @@ def create_share(credentials, resv_id_parent, share_profile_id):
     return {'status': 200, 'content': share_reservation_id}
 
     # Faz o share
+
+def get_in_house_reservations(credentials):
+
+
+
+    offset = 1
+    hasMore = True
+    reservas_list = []
+
+    while hasMore:
+
+
+        url = f"{credentials.api_url}/rsv/v1/hotels/{credentials.hotel_id}/reservations?reservationStatuses=InHouse"
+
+        params = {
+            "limit": 200,
+            "offset": offset,
+            "excludePseudoRoomReservations": "true"
+        }
+
+        headers = {
+        'Content-Type': 'application/json',
+        'x-hotelid': credentials.hotel_id,
+        'x-app-key': credentials.app_key,
+        'Authorization': f'Bearer {credentials.token}'
+        }
+
+        response = requests.request("GET", url, headers=headers, params=params)
+
+        if response.ok:
+            response_data = response.json()
+            offset = response_data['reservations']['offset']
+            hasMore = response_data['reservations']['hasMore']
+
+            reservas_list.extend(response_data['reservations']['reservationInfo'])
+
+            if hasMore == False:
+                response_data['reservations']['reservationInfo'] = reservas_list
+                search_results = {
+                    "responseStatus": 200,
+                    "dataResult": response_data
+                    }
+        else:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=response.text,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    return search_results
+
+
+def find_reservation_in_house(search_results, fullName=None, roomNumber=None):
+
+    if search_results['responseStatus'] != 200:
+        api_return(404, "Não encontrado.")
     
+    def must_match_n_names(min_match, lista1, lista2):
+
+        interseccao = set(lista1) & set(lista2)
+        return len(interseccao) >= min_match
+    
+    resultado_final = []
+    reservas_verificadas = []
+    reservas = search_results["dataResult"]['reservations']['reservationInfo']
+
+    for reserva in reservas:
+
+        #Lê os atributos do json para o filtro
+        first_name = reserva.get("reservationGuest", {}).get('givenName', '')
+        surname = reserva.get("reservationGuest", {}).get('surname', '')
+        opera_confirmation = reserva.get('reservationIdList', [{}, {}])[1].get('id', '')
+        external_references = [ str(x['id']) for x in reserva.get('externalReferences', [])]
+        resv_id = reserva.get('reservationIdList')[0].get('id')
+        room_number = reserva.get('roomStay', [{}, {}]).get('roomId', None)
+        full_name = first_name.split(' ') + surname.split(' ')
+        
+        
+        # match_name = bool(must_match_n_names(2, full_name, fullName.split(' ')) or full_name == None)
+        # match_room = bool(room_number == roomNumber or room_number == None)
+        # match_opera_reservation = bool(str(opera_confirmation) == str(reservationNumber) or reservationNumber == None)
+        # match_external_reservation = bool(str(external_references) == str(reservationNumber) or reservationNumber == None)
+
+        match_name = must_match_n_names(2, full_name, fullName.split(' ')) or full_name is None
+        match_room = room_number == roomNumber or room_number is None
+
+        filter_conditions = bool(match_room and match_name) 
+        
+        # print(room_number)
+        # print("Match Name:", match_name)
+        # print("Match Room:", match_room)
+        # print("Filter:", filter_conditions)
+
+
+        #Para cada vez que o filtro pegar, inclui na lista de resultados
+        if filter_conditions:
+
+            share_ids = [x['profileId']['id'] for x in reserva.get('sharedGuests', [])]
+            list_of_shared_reservations = [x for x in reservas if x['reservationIdList'][0]['id'] in share_ids]
+            list_of_shared_reservations.append(reserva)
+
+            total_adults = sum([
+                int(x.get('roomStay', {}).get('adultCount', 0)) 
+                    for x in list_of_shared_reservations
+                ])
+
+            total_childs = sum([
+                int(reserva.get('roomStay', {}).get('childCount', 0)) 
+                    for reserva in list_of_shared_reservations
+                ])
+
+            guests = [
+                {
+                    "profileId": reserva['reservationGuest']['id'],
+                    "firstName": reserva['reservationGuest']['givenName'],
+                    "lastName": reserva['reservationGuest']['surname']
+                } for reserva in list_of_shared_reservations
+            ]
+
+            reservas_verificadas.extend(share_ids)
+
+            resultado_final.append(
+                {
+                    "reservationId": resv_id,
+                    "adultNumber": total_adults,
+                    "childnumber": total_childs,
+                    "arrivalDate": reserva.get('roomStay', {}).get('arrivalDate', 0),
+                    "departureDate": reserva.get('roomStay', {}).get('departureDate', 0),
+                    "rateAmount": reserva.get('roomStay', {}).get('rateAmount', {}).get('amount', ''),
+                    "guaranteeCode": reserva.get('roomStay', {}).get('guarantee', {}).get('guaranteeCode', ''),
+                    "guests": guests
+                }
+            )
+
+    resultado = {
+        "isInHouse": len(resultado_final)> 0,
+        "resultado": resultado_final
+    }   
+
+    # resultado_final['isInHouse'] = len(resultado_final)> 0
+
+    return resultado# {"responseStatus": 200,
+            #"dataResult": resultado_final}
