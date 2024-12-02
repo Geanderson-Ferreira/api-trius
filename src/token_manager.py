@@ -13,6 +13,7 @@ def get_credentials(hotel):
     DATA_BASE_URL = environ.get('DATA_BASE_URL')
     DATA_BASE_PASSWORD = environ.get('DATA_BASE_PASSWORD')
     DATA_BASE_PORT = environ.get('DATA_BASE_PORT')
+    ENVIRON = environ.get('ENVIRON')
 
     try:
         # Estabelecendo a conexão com o banco de dados
@@ -23,7 +24,7 @@ def get_credentials(hotel):
         cur = conn.cursor()
 
         # Consulta para verificar as credenciais do hotel
-        selectCredentials = f"""SELECT * FROM "baipass_uat"."hotels" WHERE "hotel_code"='{hotel}';"""
+        selectCredentials = f"""SELECT * FROM "{ENVIRON}"."hotels" WHERE "hotel_code"='{hotel}';"""
         cur.execute(selectCredentials)
         hotelReturn = cur.fetchone()
 
@@ -77,6 +78,7 @@ def update_token(hotel):
     DATA_BASE_URL = environ.get('DATA_BASE_URL')
     DATA_BASE_PASSWORD = environ.get('DATA_BASE_PASSWORD')
     DATA_BASE_PORT = environ.get('DATA_BASE_PORT')
+    ENVIRON = environ.get('ENVIRON')
 
     #Tenta conectar ao banco
     try:
@@ -85,7 +87,7 @@ def update_token(hotel):
         )
         selectCredentials = f"""
 
-        Select * from "baipass_uat"."hotels" where "hotel_code"='{hotel}';
+        Select * from "{ENVIRON}"."hotels" where "hotel_code"='{hotel}';
         
         """
 
@@ -131,7 +133,7 @@ def update_token(hotel):
         
         token = response.json()['access_token']
 
-        updateToken = f"""update "baipass_uat"."hotels" set "hotel_token"='{token}', "hotel_tokentime"='{datetime.now()}' where "hotel_code"='{hotel}';"""
+        updateToken = f"""update "{ENVIRON}"."hotels" set "hotel_token"='{token}', "hotel_tokentime"='{datetime.now()}' where "hotel_code"='{hotel}';"""
         cur.execute(updateToken)
         conn.commit()
 
@@ -147,6 +149,7 @@ def get_token(hotel):
     DATA_BASE_URL = environ.get('DATA_BASE_URL')
     DATA_BASE_PASSWORD = environ.get('DATA_BASE_PASSWORD')
     DATA_BASE_PORT = environ.get('DATA_BASE_PORT')
+    ENVIRON = environ.get('ENVIRON')
 
     try:
         conn = psycopg.connect(
@@ -154,7 +157,7 @@ def get_token(hotel):
         )
         cur = conn.cursor()
 
-        selectCredentials = f"""Select * from "baipass_uat"."hotels" where "hotel_code"='{hotel}';"""
+        selectCredentials = f"""Select * from "{ENVIRON}"."hotels" where "hotel_code"='{hotel}';"""
         cur.execute(selectCredentials)
         hotelReturn = cur.fetchone()
 

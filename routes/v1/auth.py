@@ -51,11 +51,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     #Pega os dados enviados pelo usuário
     username = form_data.username
     password = form_data.password
-
+    ENVIRON = environ.get('ENVIRON')
     conn = create_db_connection()
     cur = conn.cursor()
 
-    selectUser = f"""Select * from "baipass_uat"."users" where "username"='{username}' and "password"='{password}';"""
+    selectUser = f"""Select * from "{ENVIRON}"."users" where "username"='{username}' and "password"='{password}';"""
     cur.execute(selectUser)
     userExists = cur.fetchone()
 
