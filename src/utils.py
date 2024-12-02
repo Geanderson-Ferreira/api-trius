@@ -30,7 +30,7 @@ class Logger:
             print(formatted_message)
 
     def _log_to_db(self, level, message):
-        if level != 'OUTER':#'INFO':  # Log no banco só para níveis acima de INFO
+        if level !='INFO':  # Log no banco só para níveis acima de INFO
             try:
                 connection = psycopg2.connect(
                     database=environ.get('DATA_BASE_NAME'),
