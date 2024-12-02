@@ -3,13 +3,12 @@ from datetime import date, datetime, timedelta
 from os import environ
 from dotenv import load_dotenv
 from fastapi import HTTPException, status
-
+from src.utils import api_return
 
 load_dotenv()
 
 
 def get_credentials(hotel):
-
     DATA_BASE_NAME = environ.get('DATA_BASE_NAME')
     DATA_BASE_USER = environ.get('DATA_BASE_USER')
     DATA_BASE_URL = environ.get('DATA_BASE_URL')
@@ -17,14 +16,15 @@ def get_credentials(hotel):
     DATA_BASE_PORT = environ.get('DATA_BASE_PORT')
 
     try:
-        # Establishing the connection to the database
+        # Estabelecendo a conexão com o banco de dados
         conn = psycopg.connect(
             f"dbname={DATA_BASE_NAME} user={DATA_BASE_USER} password={DATA_BASE_PASSWORD} host={DATA_BASE_URL} port={DATA_BASE_PORT}"
         )
 
         cur = conn.cursor()
 
-        selectCredentials = f"""Select * from "baipass_uat"."hotels" where "hotel_code"='{hotel}';"""
+        # Consulta para verificar as credenciais do hotel
+        selectCredentials = f"""SELECT * FROM "baipass_uat"."hotels" WHERE "hotel_code"='{hotel}';"""
         cur.execute(selectCredentials)
         hotelReturn = cur.fetchone()
 
@@ -33,24 +33,26 @@ def get_credentials(hotel):
 
         raise HTTPException(
                 status_code=400,
-                detail="Erro Interno. Contate administrador da API.",
+                detail="Erro Interno. Contate o administrador da API.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    
+
+    # Se não encontrar o hotel, lança um erro 404
     if hotelReturn is None:
         raise HTTPException(
                 status_code=404,
-                detail="Hotel não cadastrado.",
+                detail="Hotel não encontrado.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    
+
+    # Se o hotel for encontrado, retorna as credenciais
     hotel_code = hotelReturn[1]
     hotel_name = hotelReturn[2]
     hotel_username = hotelReturn[3]
     hotel_password = hotelReturn[4]
     hotel_appkey = hotelReturn[5]
     hotel_clientid = hotelReturn[6]
-    hotel_clientsecret =hotelReturn[7]
+    hotel_clientsecret = hotelReturn[7]
     hotel_url = hotelReturn[10]
     hotel_authkey = hotelReturn[11]
 
@@ -67,7 +69,8 @@ def get_credentials(hotel):
     }
 
     return credentials
-  
+
+
 def update_token(hotel):
 
     DATA_BASE_NAME = environ.get('DATA_BASE_NAME')
@@ -123,7 +126,7 @@ def update_token(hotel):
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    print(response.text)
+    print(f"Token OHIP atualizado. Hotel: {hotel}")
 
     if response.ok:
         

@@ -48,7 +48,7 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta = None):
 @router.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
-    #PEga os dados enviados pelo usuário
+    #Pega os dados enviados pelo usuário
     username = form_data.username
     password = form_data.password
 

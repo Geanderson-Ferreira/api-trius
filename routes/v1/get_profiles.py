@@ -11,30 +11,32 @@ ROTA = "/get-profiles"
 router = APIRouter()
 
 @router.get(ROTA)
-async def get_guest_profiles(hotelId:str, profileId: List[int] = Query(..., max_length=6), token: str = Depends(oauth2_scheme)):
+async def get_guest_profiles(
+    hotelId: str, profileId: List[int] = Query(..., max_length=6), token: str = Depends(oauth2_scheme)
+):
     """Obtém perfis de hóspedes com base nos parâmetros de URL fornecidos.
-    - **profileIds**:
-    O limite é 6 profiles.
+    - **profileIds**: O limite é 6 profiles.
     """
     try:
-        try:
-            # Decodifica o token para verificar a autenticidade
-            payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-            username = payload.get("sub")
-            if username is None:
-                raise HTTPException(status_code=401, detail="Invalid token")
-
-        except jwt.PyJWTError:
+        # Decodifica o token para verificar a autenticidade
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        username = payload.get("sub")
+        if username is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-            
-        credenciais = Credentials(hotelId)
 
-        search = get_profiles(credenciais, profileId)
+        # Obtém as credenciais do hotel e lança erro 404 caso o hotel não exista
+        hotel_credentials = Credentials(hotelId)
+
+        search = get_profiles(hotel_credentials, profileId)
 
         if search['status'] == 200:
             return search['content']
         else:
-            raise HTTPException(status_code=401, detail=search['content'])
+            raise HTTPException(status_code=search['status'], detail=search['content'])
     
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except HTTPException as e:
+        raise e  # Se o erro for do tipo HTTPException, re-levante-o
     except Exception as erro:
-        raise HTTPException(status_code=401, detail=erro)
+        raise HTTPException(status_code=500, detail=str(erro))

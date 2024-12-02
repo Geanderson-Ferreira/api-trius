@@ -94,11 +94,9 @@ def find_reservation_inside_of_results(search_results, lastName=None, reservatio
                 bool(str(lastName).lower() in list(map(lambda x: str(x).lower(), surname.split(' '))) or lastName is None)
                 and
                 bool(str(firstName).lower() in list(map(lambda x: str(x).lower(), first_name.split(' '))) or firstName is None) 
-
             )
             and
                 resv_id not in reservas_verificadas
-
             and not
 
                 bool(lastName is None and reservationNumber is None and firstName is None)
