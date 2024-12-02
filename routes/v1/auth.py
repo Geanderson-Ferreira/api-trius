@@ -28,12 +28,6 @@ conn = psycopg.connect(
     f"dbname={DATA_BASE_NAME} user={DATA_BASE_USER} password={DATA_BASE_PASSWORD} host={DATA_BASE_URL} port=5432"
 )
 
-# conn = psycopg.connect(database = 'baipass_uat', 
-#                         user = 'mrfosteruat',
-#                         host = 'baipass-uat.postgres.uhserver.com',
-#                         password = 'MrF0st3r@@2025',
-#                         port = 5432)
-
 cur = conn.cursor()
 
 # Definições de configuração
