@@ -2,6 +2,8 @@ import datetime
 import psycopg2
 from os import environ
 from dotenv import load_dotenv
+from fastapi import HTTPException, status
+import psycopg
 
 load_dotenv()
 
@@ -72,3 +74,35 @@ class Logger:
 
     def success(self, message):
         self._log('SUCCESS', message)
+
+
+def api_return(status_code: int, info: str):
+
+    raise HTTPException(
+                status_code=status_code,
+                detail=info,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+def create_db_connection():
+
+    DATA_BASE_NAME = environ.get('DATA_BASE_NAME')
+    DATA_BASE_USER = environ.get('DATA_BASE_USER')
+    DATA_BASE_URL = environ.get('DATA_BASE_URL')
+    DATA_BASE_PASSWORD = environ.get('DATA_BASE_PASSWORD')
+    DATA_BASE_PORT = environ.get('DATA_BASE_PORT')
+
+    try:
+        conn = psycopg.connect(
+            f"dbname={DATA_BASE_NAME} user={DATA_BASE_USER} password={DATA_BASE_PASSWORD} host={DATA_BASE_URL} port={DATA_BASE_PORT}"
+        )
+        return conn
+
+    except psycopg.OperationalError as e:
+        print(f"Erro ao conectar banco de dados: {e}")
+
+        raise HTTPException(
+                status_code=400,
+                detail="Erro Interno. Contate administrador da API.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )

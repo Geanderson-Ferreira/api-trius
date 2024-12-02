@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from src.credentials import Credentials
 from typing import List
-import requests
 import jwt
 from routes.v1.auth import oauth2_scheme, SECRET_KEY
 from src.ohip_profiles import get_profiles

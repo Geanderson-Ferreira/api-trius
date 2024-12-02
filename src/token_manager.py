@@ -2,29 +2,48 @@ import psycopg, requests
 from datetime import date, datetime, timedelta
 from os import environ
 from dotenv import load_dotenv
+from fastapi import HTTPException, status
+
 
 load_dotenv()
-
-DATA_BASE_NAME = environ.get('DATA_BASE_NAME')
-DATA_BASE_USER = environ.get('DATA_BASE_USER')
-DATA_BASE_URL = environ.get('DATA_BASE_URL')
-DATA_BASE_PASSWORD = environ.get('DATA_BASE_PASSWORD')
-DATA_BASE_PORT = environ.get('DATA_BASE_PORT')
-
-# Establishing the connection to the database
-conn = psycopg.connect(
-    f"dbname={DATA_BASE_NAME} user={DATA_BASE_USER} password={DATA_BASE_PASSWORD} host={DATA_BASE_URL} port=5432"
-)
-
-cur = conn.cursor()
 
 
 def get_credentials(hotel):
 
-    selectCredentials = f"""Select * from "baipass_uat"."hotels" where "hotel_code"='{hotel}';"""
-    cur.execute(selectCredentials)
-    hotelReturn = cur.fetchone()
+    DATA_BASE_NAME = environ.get('DATA_BASE_NAME')
+    DATA_BASE_USER = environ.get('DATA_BASE_USER')
+    DATA_BASE_URL = environ.get('DATA_BASE_URL')
+    DATA_BASE_PASSWORD = environ.get('DATA_BASE_PASSWORD')
+    DATA_BASE_PORT = environ.get('DATA_BASE_PORT')
 
+    try:
+        # Establishing the connection to the database
+        conn = psycopg.connect(
+            f"dbname={DATA_BASE_NAME} user={DATA_BASE_USER} password={DATA_BASE_PASSWORD} host={DATA_BASE_URL} port={DATA_BASE_PORT}"
+        )
+
+        cur = conn.cursor()
+
+        selectCredentials = f"""Select * from "baipass_uat"."hotels" where "hotel_code"='{hotel}';"""
+        cur.execute(selectCredentials)
+        hotelReturn = cur.fetchone()
+
+    except psycopg.OperationalError as e:
+        print(f"Erro ao conectar banco de dados: {e}")
+
+        raise HTTPException(
+                status_code=400,
+                detail="Erro Interno. Contate administrador da API.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    
+    if hotelReturn is None:
+        raise HTTPException(
+                status_code=404,
+                detail="Hotel não cadastrado.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    
     hotel_code = hotelReturn[1]
     hotel_name = hotelReturn[2]
     hotel_username = hotelReturn[3]
@@ -51,10 +70,35 @@ def get_credentials(hotel):
   
 def update_token(hotel):
 
-    selectCredentials = f"""Select * from "baipass_uat"."hotels" where "hotel_code"='{hotel}';"""
-    cur.execute(selectCredentials)
-    hotelReturn = cur.fetchone()
+    DATA_BASE_NAME = environ.get('DATA_BASE_NAME')
+    DATA_BASE_USER = environ.get('DATA_BASE_USER')
+    DATA_BASE_URL = environ.get('DATA_BASE_URL')
+    DATA_BASE_PASSWORD = environ.get('DATA_BASE_PASSWORD')
+    DATA_BASE_PORT = environ.get('DATA_BASE_PORT')
 
+    #Tenta conectar ao banco
+    try:
+        conn = psycopg.connect(
+            f"dbname={DATA_BASE_NAME} user={DATA_BASE_USER} password={DATA_BASE_PASSWORD} host={DATA_BASE_URL} port={DATA_BASE_PORT}"
+        )
+        selectCredentials = f"""
+
+        Select * from "baipass_uat"."hotels" where "hotel_code"='{hotel}';
+        
+        """
+
+        cur = conn.cursor()
+        cur.execute(selectCredentials)
+        hotelReturn = cur.fetchone()
+    except psycopg.OperationalError as e:
+        print(f"Erro ao conectar banco de dados: {e}")
+
+        raise HTTPException(
+                status_code=400,
+                detail="Erro Interno. Contate administrador da API.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    
     hotel_code = hotelReturn[1]
     hotel_name = hotelReturn[2]
     hotel_username = hotelReturn[3]
@@ -85,7 +129,7 @@ def update_token(hotel):
         
         token = response.json()['access_token']
 
-        updateToken = f"""update "baipass_uat"."hotels" set "hotel_token"='{token}', "hotel_tokentime"='{datetime.now()}' where "hotel_code"='{hotel};"""
+        updateToken = f"""update "baipass_uat"."hotels" set "hotel_token"='{token}', "hotel_tokentime"='{datetime.now()}' where "hotel_code"='{hotel}';"""
         cur.execute(updateToken)
         conn.commit()
 
@@ -96,9 +140,30 @@ def update_token(hotel):
 
 def get_token(hotel):
 
-    selectCredentials = f"""Select * from "baipass_uat"."hotels" where "hotel_code"='{hotel}';"""
-    cur.execute(selectCredentials)
-    hotelReturn = cur.fetchone()
+    DATA_BASE_NAME = environ.get('DATA_BASE_NAME')
+    DATA_BASE_USER = environ.get('DATA_BASE_USER')
+    DATA_BASE_URL = environ.get('DATA_BASE_URL')
+    DATA_BASE_PASSWORD = environ.get('DATA_BASE_PASSWORD')
+    DATA_BASE_PORT = environ.get('DATA_BASE_PORT')
+
+    try:
+        conn = psycopg.connect(
+            f"dbname={DATA_BASE_NAME} user={DATA_BASE_USER} password={DATA_BASE_PASSWORD} host={DATA_BASE_URL} port={DATA_BASE_PORT}"
+        )
+        cur = conn.cursor()
+
+        selectCredentials = f"""Select * from "baipass_uat"."hotels" where "hotel_code"='{hotel}';"""
+        cur.execute(selectCredentials)
+        hotelReturn = cur.fetchone()
+
+    except psycopg.OperationalError as e:
+        print(f"Erro ao conectar banco de dados: {e}")
+
+        raise HTTPException(
+                status_code=400,
+                detail="Erro Interno. Contate administrador da API.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
     hotel_code = hotelReturn[1]
     hotel_name = hotelReturn[2]
@@ -118,6 +183,3 @@ def get_token(hotel):
         return update_token(hotel)
     else:
         return hotel_token
-
-
-

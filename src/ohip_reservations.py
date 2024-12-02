@@ -4,8 +4,6 @@ from datetime import datetime
 import json 
 from fastapi import HTTPException, status
 
-
-
 def get_reservations_by_checkout_date(credentials, checkoutDate: str):
 
     try:
