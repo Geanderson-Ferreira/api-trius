@@ -134,9 +134,9 @@ def get_profile_comunication(credenciais: Credentials, profile_id):
         telephone_info = profile_json.get('profileDetails',{}).get('telephones',{}).get('telephoneInfo',[{}])
         email_info = profile_json.get('profileDetails',{}).get('emails',{}).get('emailInfo',[{}])
         data ={
-            "addresses" : [x['id'] for x in address_info],
-            "telephones" : [x['id'] for x in telephone_info],
-            "emails": [x['id'] for x in email_info]
+            "addresses" : [x.get('id') for x in address_info],
+            "telephones" : [x.get('id') for x in telephone_info],
+            "emails": [x.get('id') for x in email_info]
         }
         
         return data
@@ -194,7 +194,7 @@ def delete_some_data_from_profile(credentials: Credentials, profile_id, data_typ
 
     data_type 
 
-    url = f"{credentials.api_url}/crm/v1/profiles{profile_id}"
+    url = f"{credentials.api_url}/crm/v1/profiles/{profile_id}"
 
     payload = json.dumps({
     "profileDetails": {
@@ -214,8 +214,7 @@ def delete_some_data_from_profile(credentials: Credentials, profile_id, data_typ
         }
     ]
     })
-
-
+    
     headers = {
     'Content-Type': 'application/json',
     'x-app-key': credentials.app_key,
@@ -252,6 +251,9 @@ def create_or_update_profile(credenciais: Credentials,
                     gender: str,
                     prof_id:str = None
                    ):
+    
+
+
     birth_date_str = date_of_birth.strftime('%Y-%m-%d')
 
     is_estrangeiro = bool(citizen_country != 'BR')
@@ -273,6 +275,15 @@ def create_or_update_profile(credenciais: Credentials,
         last_name = name[0]
 
     if prof_id != None:
+
+
+        #Deleta os dados antes de inserir
+        data_to_delete_on_end = get_profile_comunication(credenciais, prof_id)
+        for key in data_to_delete_on_end:
+            for data_id in data_to_delete_on_end[key]:
+                delete_some_data_from_profile(credenciais,prof_id, key, data_id)
+
+
         url = f"{credenciais.api_url}/crm/v1/profiles/{prof_id}"
 
         prof_id_list = [{
@@ -282,7 +293,7 @@ def create_or_update_profile(credenciais: Credentials,
 
         req = 'PUT'
 
-        data_to_delete_on_end = get_profile_comunication(credenciais, prof_id)
+
     else:
         url = f"{credenciais.api_url}/crm/v1/profiles/"
         prof_id_list = []
@@ -420,6 +431,7 @@ def create_or_update_profile(credenciais: Credentials,
 
         if prof_id != None:
             prof_id_returned = prof_id
+
         else:
             prof_id_returned = data['links'][0]['href'].split('/')[-1]
 
@@ -433,15 +445,6 @@ def create_or_update_profile(credenciais: Credentials,
         if dados['status'] != 200:
             dados = {'status': 200, 'content': f'Cadastro criado com sucesso, mas erro no get: {dados['content']}'}
         
-
-        
-        # Deletar os outros dados
-
-        print("Poderia deletar ",data_to_delete_on_end)
-
-
-
-
     else:
         dados = {'status': 400, 'content': response.text}
 
