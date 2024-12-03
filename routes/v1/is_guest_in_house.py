@@ -18,7 +18,7 @@ async def is_guest_in_house(
     roomNumber: str,
     fullName: str,
     token: str = Depends(oauth2_scheme)
-):
+    ):
 
     if not token:
         raise HTTPException(status_code=401, detail="Invalid token")

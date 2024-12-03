@@ -1,5 +1,4 @@
 import datetime
-import psycopg2
 from os import environ
 from dotenv import load_dotenv
 from fastapi import HTTPException, status
@@ -34,7 +33,7 @@ class Logger:
     def _log_to_db(self, level, message):
         if level !='INFO':  # Log no banco só para níveis acima de INFO
             try:
-                connection = psycopg2.connect(
+                connection = psycopg.connect(
                     database=environ.get('DATA_BASE_NAME'),
                     user=environ.get('DATA_BASE_USER'),
                     host=environ.get('DATA_BASE_URL'),

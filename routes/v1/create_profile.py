@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 import jwt
 from routes.v1.auth import oauth2_scheme, SECRET_KEY
-from src.ohip_profiles import create_profile
+from src.ohip_profiles import create_or_update_profile
 from src.credentials import Credentials
 from models.models import GuestProfile
 
@@ -38,7 +38,7 @@ async def create_customer_profile(hotel, profile: GuestProfile, token: str = Dep
     
     credenciais = Credentials(hotel)
 
-    profile_criado = create_profile(credenciais, profile.fullName, profile.citizenCountry, profile.dateOfBirth,
+    profile_criado = create_or_update_profile(credenciais, profile.fullName, profile.citizenCountry, profile.dateOfBirth,
                     profile.email, profile.telephone, profile.residenceCountry,
                     profile.zipCode, profile.street, profile.residenceNumber,
                     profile.neighborhood, profile.complement, profile.city, profile.state,
