@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 import jwt
 from routes.v1.auth import oauth2_scheme, SECRET_KEY
-from src.ohip_profiles import create_profile
+from src.ohip_profiles import create_or_update_profile
 from src.credentials import Credentials
 from models.models import GuestProfile
 from src.ohip_reservations import create_share

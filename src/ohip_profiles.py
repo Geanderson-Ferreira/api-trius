@@ -101,14 +101,11 @@ def get_profiles(credenciais: Credentials, profile_id_list):
         return {"status": response.status_code, "content": response.text}
 
 
-def get_profile_communication(credenciais: Credentials, profile_id):
+def get_profile_comunication(credenciais: Credentials, profile_id):
 
     credenciais = Credentials(credenciais.hotel_id)
-    any_success = False
-    resultado = []
 
-    # for profile in profile_id_list:
-    
+
     url = f"{credenciais.api_url}/crm/v1/profiles/{profile_id}"
 
     # Defina os parâmetros diretamente
@@ -127,76 +124,24 @@ def get_profile_communication(credenciais: Credentials, profile_id):
         'x-hotelid': credenciais.hotel_id,
         'Authorization': f'Bearer {credenciais.token}'
     }
-
-    # Faça a requisição com os parâmetros
     
+    # Faça a requisição com os parâmetros
     response = requests.get(url, headers=headers, params=params)
-
     if response.ok:
 
         profile_json = response.json()
-        
-        full_name = profile_json.get('profileDetails',{}).get('customer',{}).get('personName',[{}])[0].get('givenName') + ' ' + profile_json.get('profileDetails',{}).get('customer',{}).get('personName',[{}])[0].get('surname', '')
-        nacionalidade = profile_json.get('profileDetails',{}).get('customer',{}).get('citizenCountry',{}).get('code')
-        date_of_birth = profile_json.get('profileDetails',{}).get('customer',{}).get('birthDate')
-        email = profile_json.get('profileDetails',{}).get('emails',{}).get('emailInfo',[{}])[0].get('email',{}).get('emailAddress')
-        telephone = profile_json.get('profileDetails',{}).get('telephones',{}).get('telephoneInfo',[{}])[0].get('telephone',{}).get('phoneNumber')
-        country = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('country',{}).get('code')
-        zip_code = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('postalCode')
-        
-
-        address_line = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('addressLine')
-        
-        #Há casos em que o cadastro não possui address_line, portanto nesses casos, Rua, Numero, Bairro e Complemento devem ser nulos.
-        if address_line != None:
-            street = address_line[0] if len(address_line) > 0 else None
-            numero_residencial =  address_line[1] if len(address_line) > 1 else None
-            bairro = address_line[2] if len(address_line) > 2 else None
-            complemento = address_line[3] if len(address_line) > 3 else None
-        else:
-            street = None
-            numero_residencial =  None
-            bairro = None
-            complemento = None
-        
-        if str(numero_residencial).isdigit():
-            numero_residencial = int(numero_residencial)
-        else: numero_residencial = None
-
-
-        cidade = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('cityName')
-        estado = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])[0].get('address',{}).get('state')
-        cpf = profile_json.get('profileDetails',{}).get('taxInfo',{}).get('tax1No')
-        gender = profile_json.get('profileDetails',{}).get('customer',{}).get('gender')
-
-
-        dados = {
-            'fullName': full_name,
-            'citizenCountry': nacionalidade,
-            'dateOfBirth': date_of_birth,
-            'email': email,
-            'telephone': telephone,
-            'residenceCountry': country,
-            'zipCode': zip_code,
-            'street': street,
-            'residenceNumber': numero_residencial,
-            'neighborhood': bairro,
-            'complement': complemento,
-            'city': cidade,
-            'state': estado,
-            'cpf': cpf,
-            'gender': gender
+        address_info = profile_json.get('profileDetails',{}).get('addresses',{}).get('addressInfo',[{}])
+        telephone_info = profile_json.get('profileDetails',{}).get('telephones',{}).get('telephoneInfo',[{}])
+        email_info = profile_json.get('profileDetails',{}).get('emails',{}).get('emailInfo',[{}])
+        data ={
+            "addresses" : [x['id'] for x in address_info],
+            "telephones" : [x['id'] for x in telephone_info],
+            "emails": [x['id'] for x in email_info]
         }
-
-        resultado.append({profile_id: dados})
-        any_success = True
+        
+        return data
     else:
-        resultado.append({profile_id: response.text})
-
-    if any_success:
-        return {"status": 200, "content": resultado}
-    else:
-        return {"status": response.status_code, "content": response.text}
+        print(f"Não foi possível obter os dados do cadastro {profile_id} para deletar as comunications excedentes.")
 
 def put_cpf(credencials: Credentials, profile_id, cpf):
 
@@ -336,6 +281,8 @@ def create_or_update_profile(credenciais: Credentials,
             }]
 
         req = 'PUT'
+
+        data_to_delete_on_end = get_profile_comunication(credenciais, prof_id)
     else:
         url = f"{credenciais.api_url}/crm/v1/profiles/"
         prof_id_list = []
@@ -486,8 +433,11 @@ def create_or_update_profile(credenciais: Credentials,
         if dados['status'] != 200:
             dados = {'status': 200, 'content': f'Cadastro criado com sucesso, mas erro no get: {dados['content']}'}
         
+
         
         # Deletar os outros dados
+
+        print("Poderia deletar ",data_to_delete_on_end)
 
 
 
