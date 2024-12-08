@@ -23,4 +23,4 @@ class GuestProfile(BaseModel):
 
 class ShareRequestBody(BaseModel):
     reservationIdParent: int
-    shareProfileId: int
+    shareProfileIds: list

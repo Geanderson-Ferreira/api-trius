@@ -34,7 +34,9 @@ async def create_customer_profile(
     
     # Extrair os dados do corpo da requisição
     reservationIdParent = body.reservationIdParent
-    shareProfileId = body.shareProfileId
+    shareProfileIds = body.shareProfileIds
+
+
 
     # Criar credenciais
     credenciais = Credentials(hotel)
@@ -43,11 +45,11 @@ async def create_customer_profile(
     result = create_share(
         credentials=credenciais,
         resv_id_parent=reservationIdParent,
-        share_profile_id=shareProfileId
+        share_profile_ids=shareProfileIds
     )
-
+    return result
     # Verifica a resposta e retorna de acordo
-    if result['status'] == 200:
-        return result['content']
-    else:
-        raise HTTPException(status_code=401, detail=result['content'])
+    # if result['status'] == 200:
+    #     return result['content']
+    # else:
+    #     raise HTTPException(status_code=401, detail=result['content'])

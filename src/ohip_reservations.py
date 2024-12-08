@@ -442,38 +442,147 @@ def new_reservation_with_existing_profile(credentials, profile_id, checkin, chec
         return {"action_status": 400, "content":response.text}
 
 
-def create_share(credentials, resv_id_parent, share_profile_id):
+def return_reservation(reservation_json):
 
-    # Encontra a reserva original Parent para fazer as associações
-    resv_parent_data = get_reservation(credentials, resv_id_parent)
 
-    if not resv_parent_data:
-        return {'status': 204, 'content': 'Não foi possível encontrar a reserva parent'}
+    resultado_final = []
+    reservas_verificadas = []
+    reservas = reservation_json['reservations']['reservation']
 
-    # Cria nova Reserva com as informações basicas da reserva parent
-    checkin_date = resv_parent_data['reservations']['reservation'][0]['roomStay']['arrivalDate']
-    checkout_date = resv_parent_data['reservations']['reservation'][0]['roomStay']['departureDate']
-    room_type = resv_parent_data['reservations']['reservation'][0]['roomStay']['roomRates'][0]['roomType']
-    rate_plan_code = resv_parent_data['reservations']['reservation'][0]['roomStay']['roomRates'][0]['ratePlanCode']
-    market_code = resv_parent_data['reservations']['reservation'][0]['roomStay']['roomRates'][0]['marketCode']
-    source_code = resv_parent_data['reservations']['reservation'][0]['roomStay']['roomRates'][0]['sourceCode']
-    payment_method = resv_parent_data['reservations']['reservation'][0]['reservationPaymentMethods'][0]['paymentMethod']
-    guarantee_code = resv_parent_data['reservations']['reservation'][0]['roomStay']['guarantee']['guaranteeCode']
+    for reserva in reservas:
 
-    nova_reserva = new_reservation_with_existing_profile(credentials, share_profile_id, checkin_date, checkout_date, payment_method, guarantee_code, source_code, '0', market_code, rate_plan_code, room_type)
+        #Lê os atributos do json para o filtro
+        first_name = reserva.get("reservationGuest", {}).get('givenName', '')
+        surname = reserva.get("reservationGuest", {}).get('surname', '')
+        opera_confirmation = reserva.get('reservationIdList', [{}, {}])[1].get('id', '')
+        external_references = [ str(x['id']) for x in reserva.get('externalReferences', [])]
+        resv_id = reserva.get('reservationIdList')[0].get('id')
 
-    if nova_reserva['action_status'] != 201:
-        return {'status': 400, 'content': nova_reserva['content']}
-    else:
-        nova_reserva = nova_reserva['content']
 
-    # Atribui Share
-    share_reservation_id = [x['href'] for x in nova_reserva['links'] if x['operationId'] == 'getReservation'][0].split('/')[-1]
+        share_ids = [x['profileId']['id'] for x in reserva.get('sharedGuests', [])]
+        list_of_shared_reservations = [x for x in reservas if x['reservationIdList'][0]['id'] in share_ids]
+        list_of_shared_reservations.append(reserva)
+
+        total_adults = sum([
+            int(x.get('roomStay', {}).get('adultCount', 0)) 
+                for x in list_of_shared_reservations
+            ])
+
+        total_childs = sum([
+            int(reserva.get('roomStay', {}).get('childCount', 0)) 
+                for reserva in list_of_shared_reservations
+            ])
+
+        guests = [
+            {
+                "profileId": reserva['reservationGuest']['id'],
+                "firstName": reserva['reservationGuest']['givenName'],
+                "lastName": reserva['reservationGuest']['surname']
+            } for reserva in list_of_shared_reservations
+        ]
+
+        reservas_verificadas.extend(share_ids)
+
+        resultado_final.append(
+            {
+                "reservationId": resv_id,
+                "adultNumber": total_adults,
+                "childnumber": total_childs,
+                "arrivalDate": reserva.get('roomStay', {}).get('arrivalDate', 0),
+                "departureDate": reserva.get('roomStay', {}).get('departureDate', 0),
+                "rateAmount": reserva.get('roomStay', {}).get('rateAmount', {}).get('amount', ''),
+                "guaranteeCode": reserva.get('roomStay', {}).get('guarantee', {}).get('guaranteeCode', ''),
+                "guests": guests
+            }
+        )
+
+    return {"responseStatus": 200,
+            "dataResult": resultado_final}
+
+
+
+def create_share(credentials: Credentials, resv_id_parent, share_profile_ids):
+
+    #Profile Id Principal
+    primary_reservation = get_reservation(credentials, resv_id_parent)
+
+    return return_reservation(primary_reservation)
+    primary_profile_id_list = primary_reservation['reservations']['reservation'][0]['reservationGuests'][0]['profileInfo']['profileIdList']
+    primary_profile_id = [x['id'] for x in primary_profile_id_list if x.get('type', None) == 'Profile'][0]
     
-    return {'status': 200, 'content': share_reservation_id}
+    #lista de reservas de share
+    share_reservations_list = primary_reservation['reservations']['reservation'][0].get('sharedGuests',[])
+    share_reservations_list = [x.get('profileId', {}).get('id') for x in share_reservations_list if x.get('profileId', {}).get('type') == 'Reservation']
+    
+    # Monta lista de Ids dessa reserva
+    share_ids_list = [primary_profile_id]
+    for reservation in share_reservations_list:
+        r = get_reservation(credentials, reservation)
+        share_prof_id_temp_list = primary_reservation['reservations']['reservation'][0]['reservationGuests'][0]['profileInfo']['profileIdList']
+        share_prof_id_temp = [x['id'] for x in share_prof_id_temp_list if x.get('type', None) == 'Profile'][0]
+        share_ids_list.append(share_prof_id_temp)
 
-    # Faz o share
+    shares_to_insert = [x for x in share_profile_ids if x not in share_ids_list]
 
+    if len(shares_to_insert) > 0:
+
+        new_reservations = []
+
+        #Faz o payload de Share
+        for share_id in shares_to_insert:
+
+            new_reservations.append(
+                {
+                "newSharerId": {
+                "id": share_id,
+                "type": "Profile"
+                },
+                "guestCounts": {
+                "adults": 0,
+                "children": 0
+                },
+                "reservationPaymentMethod": {
+                "paymentMethod": "CA",
+                "folioView": 1
+                }
+            }
+            )
+
+        url = f"{credentials.api_url}/rsv/v1/hotels/{credentials.hotel_id}/reservations/1055333/shares"
+
+        payload = json.dumps({
+        "criteria": {
+            "combineShareInstruction": {
+            "distributionType": "Entire",
+            "overrideInventoryCheck": True,
+            "roomMoveCheckedinResv": True,
+            "overrideMaxOccupancyCheck": True
+            },
+            "newReservations":new_reservations,
+            "fetchInstructions": {
+            "fetchInstruction": [
+                "Reservation"
+            ],
+            "returnShareReservations": True
+            },
+            "hotelId": credentials.hotel_id
+        }
+        })
+        headers = {
+        'Content-Type': 'application/json',
+        'x-hotelid': credentials.hotel_id,
+        'x-app-key': credentials.app_key
+        }
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+
+        print(response.text)
+
+        return share_ids_list
+
+    else:
+        return {"share Not made"}
+    
 def get_in_house_reservations(credentials):
 
 
