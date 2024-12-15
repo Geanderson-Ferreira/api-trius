@@ -84,6 +84,7 @@ def find_reservation_inside_of_results(search_results, lastName=None, reservatio
         ext =bool(reservationNumber in external_references or reservationNumber is None)
         last = bool(str(lastName).lower() in list(map(lambda x: str(x).lower(), surname.split(' '))) or lastName is None)
         first = bool(str(firstName).lower() in list(map(lambda x: str(x).lower(), first_name.split(' '))) or firstName is None)
+        
 
         # Faz o filtro das condicoes
         filter_conditions = bool(
@@ -102,6 +103,11 @@ def find_reservation_inside_of_results(search_results, lastName=None, reservatio
 
                 bool(lastName is None and reservationNumber is None and firstName is None)
         )
+
+
+
+
+
 
         #Para cada vez que o filtro pegar, inclui na lista de resultados
         if filter_conditions:

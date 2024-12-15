@@ -3,6 +3,8 @@ import json
 from src.credentials import Credentials
 from fastapi import HTTPException
 
+from src.utils import api_return
+
 def get_profiles(credenciais: Credentials, profile_id_list):
 
     credenciais = Credentials(credenciais.hotel_id)
@@ -96,9 +98,9 @@ def get_profiles(credenciais: Credentials, profile_id_list):
             resultado.append({profile: response.text})
 
     if any_success:
-        return {"status": 200, "content": resultado}
+        return resultado
     else:
-        return {"status": response.status_code, "content": response.text}
+        api_return(status_code=404, info=response.text)
 
 
 def get_profile_comunication(credenciais: Credentials, profile_id):

@@ -29,10 +29,8 @@ async def get_guest_profiles(
 
         search = get_profiles(hotel_credentials, profileId)
 
-        if search['status'] == 200:
-            return search['content']
-        else:
-            raise HTTPException(status_code=search['status'], detail=search['content'])
+        return search
+
     
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")

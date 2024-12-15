@@ -48,8 +48,3 @@ async def create_customer_profile(
         share_profile_ids=shareProfileIds
     )
     return result
-    # Verifica a resposta e retorna de acordo
-    # if result['status'] == 200:
-    #     return result['content']
-    # else:
-    #     raise HTTPException(status_code=401, detail=result['content'])
