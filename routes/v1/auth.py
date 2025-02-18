@@ -1,15 +1,21 @@
 from pydantic import BaseModel
 import jwt
 import datetime
-import psycopg
 from os import environ
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
-import jwt
+# import jwt
+from jose import jwt  # Caso esteja usando python-jose ao invés de PyJWT
 import datetime
-from src.utils import create_db_connection, api_return
+from src.utils import api_return
+import mysql
+from dotenv import load_dotenv
+from os import environ
+import mysql.connector
+import mysql
+
 
 load_dotenv()
 
@@ -51,12 +57,36 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     #Pega os dados enviados pelo usuário
     username = form_data.username
     password = form_data.password
-    ENVIRON = environ.get('ENVIRON')
-    conn = create_db_connection()
+    
+    LEVEL_LOG="TERMINAL"
+    DATA_BASE_NAME=environ['DATA_BASE_NAME']
+    DATA_BASE_USER=environ['DATA_BASE_USER']
+    DATA_BASE_URL=environ['DATA_BASE_URL']
+    DATA_BASE_PASSWORD=environ['DATA_BASE_PASSWORD']
+    DATA_BASE_PORT=environ['DATA_BASE_PORT']
+
+    conn = mysql.connector.connect(
+                database=DATA_BASE_NAME,
+                user=DATA_BASE_USER,
+                host=DATA_BASE_URL,
+                password=DATA_BASE_PASSWORD,
+                port=DATA_BASE_PORT
+            )
+        
     cur = conn.cursor()
 
-    selectUser = f"""Select * from "{ENVIRON}"."users" where "username"='{username}' and "password"='{password}';"""
-    cur.execute(selectUser)
+    selectUser = f"""
+        SELECT `INTEGRA_API_USERS`.`API_USERNAME`,
+            `INTEGRA_API_USERS`.`API_PASSWORD`,
+            `INTEGRA_API_USERS`.`API_USER_TYPE`
+        FROM `integracaogean`.`INTEGRA_API_USERS`
+        WHERE `INTEGRA_API_USERS`.`API_USERNAME` = %s
+        AND `INTEGRA_API_USERS`.`API_PASSWORD` = %s;
+        """
+
+
+
+    cur.execute(selectUser, (username, password))
     userExists = cur.fetchone()
 
     if userExists is None:

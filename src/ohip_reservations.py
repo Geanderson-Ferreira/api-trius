@@ -4,13 +4,10 @@ from datetime import datetime
 import json 
 from fastapi import HTTPException, status
 from src.utils import api_return
+import unicodedata
 
-def get_reservations_by_checkout_date(credentials, checkoutDate: str):
+def get_reservations_by_checkout_date(credentials, checkoutDate: str, checkinDate: str):
 
-    try:
-        datetime.strptime(checkoutDate, "%Y-%m-%d")
-    except ValueError:
-        return ValueError
 
     offset = 1
     hasMore = True
@@ -25,6 +22,8 @@ def get_reservations_by_checkout_date(credentials, checkoutDate: str):
 
             "departureStartDate": checkoutDate,
             "departureEndDate": checkoutDate,
+            "arrivalStartDate": checkinDate,
+            "arrivalEndDate": checkinDate,
             "limit": 200,
             "offset": offset,
             "excludePseudoRoomReservations": "true"
@@ -39,10 +38,22 @@ def get_reservations_by_checkout_date(credentials, checkoutDate: str):
 
         response = requests.request("GET", url, headers=headers, params=params)
 
+
         if response.ok:
             response_data = response.json()
             offset = response_data['reservations']['offset']
             hasMore = response_data['reservations']['hasMore']
+
+
+            res_info = response_data['reservations'].get('reservationInfo')
+
+            if res_info is None:
+
+                return {
+                    "responseStatus": 200,
+                    "dataResult": response_data
+                    }
+
 
             reservas_list.extend(response_data['reservations']['reservationInfo'])
 
@@ -61,7 +72,7 @@ def get_reservations_by_checkout_date(credentials, checkoutDate: str):
     return search_results
 
 
-def find_reservation_inside_of_results(search_results, lastName=None, reservationNumber=None, firstName=None):
+def find_reservation_inside_of_results(hotelId, search_results, lastName=None, reservationNumber=None, firstName=None):
 
     if search_results['responseStatus'] != 200:
         return {"responseStatus":search_results['responseStatus'],
@@ -69,7 +80,12 @@ def find_reservation_inside_of_results(search_results, lastName=None, reservatio
 
     resultado_final = []
     reservas_verificadas = []
-    reservas = search_results["dataResult"]['reservations']['reservationInfo']
+    reservas = search_results["dataResult"]['reservations'].get('reservationInfo')
+
+    if reservas is None:
+        return {"responseStatus": 200,
+            "dataResult": resultado_final}
+        
 
     for reserva in reservas:
 
@@ -88,7 +104,7 @@ def find_reservation_inside_of_results(search_results, lastName=None, reservatio
         # Faz o filtro das condicoes
         filter_conditions = bool(
             bool(
-                bool(str(reservationNumber) in external_references or reservationNumber is None or str(reservationNumber) == str(opera_confirmation))
+                bool(str(reservationNumber) in external_references or reservationNumber is None or str(reservationNumber) == str(opera_confirmation) or str(reservationNumber) == str(resv_id))
                 and
                 bool( str(reservationNumber) == str(opera_confirmation) or reservationNumber is None)
                 and
@@ -104,8 +120,9 @@ def find_reservation_inside_of_results(search_results, lastName=None, reservatio
         )
 
         #Para cada vez que o filtro pegar, inclui na lista de resultados
-        if filter_conditions:
+        if filter_conditions or str(resv_id) == str(reservationNumber):
 
+            
             share_ids = [x['profileId']['id'] for x in reserva.get('sharedGuests', [])]
             list_of_shared_reservations = [x for x in reservas if x['reservationIdList'][0]['id'] in share_ids]
             list_of_shared_reservations.append(reserva)
@@ -132,7 +149,9 @@ def find_reservation_inside_of_results(search_results, lastName=None, reservatio
 
             resultado_final.append(
                 {
+                    "hotelId": hotelId,
                     "reservationId": resv_id,
+                    "reservationNumber": opera_confirmation,
                     "adultNumber": total_adults,
                     "childnumber": total_childs,
                     "arrivalDate": reserva.get('roomStay', {}).get('arrivalDate', 0),
@@ -485,7 +504,7 @@ def get_in_house_reservations(credentials):
     while hasMore:
 
 
-        url = f"{credentials.api_url}/rsv/v1/hotels/{credentials.hotel_id}/reservations?reservationStatuses=InHouse"
+        url = f"{credentials.api_url}/rsv/v1/hotels/{credentials.hotel_id}/reservations?reservationStatuses=InHouse&reservationStatuses=DueOut&limit=10000"
 
         params = {
             "limit": 200,
@@ -524,6 +543,17 @@ def get_in_house_reservations(credentials):
     return search_results
 
 
+
+
+
+def remover_acentos(texto):
+    # Normaliza a string para a forma NFD (Normal Form Decomposition)
+    texto_normalizado = unicodedata.normalize('NFD', texto)
+    # Remove os caracteres de categoria "Mn" (diacríticos)
+    texto_sem_acento = ''.join(c for c in texto_normalizado if unicodedata.category(c) != 'Mn')
+    return texto_sem_acento
+
+
 def find_reservation_in_house(search_results, fullName=None, roomNumber=None):
 
     if search_results['responseStatus'] != 200:
@@ -547,24 +577,31 @@ def find_reservation_in_house(search_results, fullName=None, roomNumber=None):
         external_references = [ str(x['id']) for x in reserva.get('externalReferences', [])]
         resv_id = reserva.get('reservationIdList')[0].get('id')
         room_number = reserva.get('roomStay', [{}, {}]).get('roomId', None)
+        
+        
+        first_name = first_name.lower()
+        surname = surname.lower()
+        fullName = fullName.lower()
+
+        first_name = remover_acentos(first_name)
+        surname = remover_acentos(surname)
+        fullName = remover_acentos(fullName)
+
         full_name = first_name.split(' ') + surname.split(' ')
         
+
         
         # match_name = bool(must_match_n_names(2, full_name, fullName.split(' ')) or full_name == None)
         # match_room = bool(room_number == roomNumber or room_number == None)
         # match_opera_reservation = bool(str(opera_confirmation) == str(reservationNumber) or reservationNumber == None)
         # match_external_reservation = bool(str(external_references) == str(reservationNumber) or reservationNumber == None)
 
+
         match_name = must_match_n_names(2, full_name, fullName.split(' ')) or full_name is None
-        match_room = room_number == roomNumber or room_number is None
+        match_room = room_number.lstrip("0") == roomNumber.lstrip("0") or room_number is None
 
         filter_conditions = bool(match_room and match_name) 
         
-        # print(room_number)
-        # print("Match Name:", match_name)
-        # print("Match Room:", match_room)
-        # print("Filter:", filter_conditions)
-
 
         #Para cada vez que o filtro pegar, inclui na lista de resultados
         if filter_conditions:

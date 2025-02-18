@@ -23,8 +23,10 @@ async def is_guest_in_house(
     if not token:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    
-    in_house = get_in_house_reservations(credentials=Credentials(str(hotel)))
-    resultado = find_reservation_in_house(search_results=in_house, fullName=fullName, roomNumber=roomNumber)
+    try:
+        in_house = get_in_house_reservations(credentials=Credentials(str(hotel)))
+        resultado = find_reservation_in_house(search_results=in_house, fullName=fullName, roomNumber=roomNumber)
 
-    return resultado
+        return resultado
+    except Exception as erro:
+            raise HTTPException(status_code=500, detail=str(erro))
