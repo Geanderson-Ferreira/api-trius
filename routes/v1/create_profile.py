@@ -5,7 +5,7 @@ from src.ohip_profiles import create_or_update_profile
 from src.credentials import Credentials
 from models.models import GuestProfile
 
-ROTA = "/create-profile/"
+ROTA = "/create-profile"
 
 
 # Inicializa o roteador de clientes
@@ -35,8 +35,11 @@ async def create_customer_profile(hotel, profile: GuestProfile, token: str = Dep
  
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
-    
+    print(hotel)
+
     credenciais = Credentials(hotel)
+
+    print(credenciais.token)
 
     profile_criado = create_or_update_profile(credenciais, profile.fullName, profile.citizenCountry, profile.dateOfBirth,
                     profile.email, profile.telephone, profile.residenceCountry,

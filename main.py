@@ -8,6 +8,9 @@ app = FastAPI(title="Integra Hotel", description="Integrador padrão de PMS")
 def health_check():
     return {"health_check":"Here we are!", "details": "/docs para documentacao"}
 
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    return {}
 
 # Carrega as rotas
 load_routes(app, prefix='api')

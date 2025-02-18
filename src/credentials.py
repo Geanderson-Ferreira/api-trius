@@ -18,6 +18,7 @@ DATA_BASE_PORT=environ['DATA_BASE_PORT']
 
 
 class Credentials:
+    
 
     def __init__(self, hotel=None):
 
@@ -61,9 +62,9 @@ class Credentials:
         self.client_id = dados[8]
         self.client_secret = dados[9]
 
-        if valit is None:
-            self._get_token()
         
+        self._get_token()
+        print(self.token)
 
 
     def _get_token(self):
